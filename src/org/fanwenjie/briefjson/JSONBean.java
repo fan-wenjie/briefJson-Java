@@ -109,14 +109,14 @@ public class JSONBean {
         return (T)bean;
     }
 
-    public static <T,A> Collection<T> deserialize(Class klass,Class<T> genericType,A[] array) throws Exception{
-        Collection collection = (Collection)klass.newInstance();
+    public static <T,A> Collection<T> deserialize(Class<? extends Collection> klass,Class<T> genericType,A[] array) throws Exception{
+        Collection collection = klass.newInstance();
         for (int i=0;i<array.length;++i)
             collection.add(deserialize(genericType,array[i]));
         return collection;
     }
 
-    public static <T> Collection<T> deserialize(Class klass,Class<T> genericType,Collection array) throws Exception{
+    public static <T> Collection<T> deserialize(Class<? extends Collection> klass,Class<T> genericType,Collection array) throws Exception{
         return deserialize(klass,genericType,array.toArray());
     }
 
@@ -138,9 +138,10 @@ public class JSONBean {
             return (T)deserialize(klass, (Map) object);
         else if(Collection.class.isAssignableFrom(klass)) {
             if (object instanceof Collection)
-                return (T)deserialize(klass, Object.class, (Collection) object);
+
+            return (T)deserialize((Class<? extends Collection>)klass, Object.class, (Collection) object);
             else if (object.getClass().isArray())
-                return (T)deserialize(klass, Object.class, (Object[]) object);
+                return (T)deserialize((Class<? extends Collection>)klass, Object.class, (Object[]) object);
             else return null;
         }else if (klass.isArray()) {
             if (object instanceof Collection)
