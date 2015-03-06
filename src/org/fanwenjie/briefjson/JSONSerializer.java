@@ -2,10 +2,7 @@ package org.fanwenjie.briefjson;
 
 
 import java.lang.reflect.Array;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  *
@@ -69,178 +66,167 @@ public class JSONSerializer {
     }
 
     private Object nextValue() throws JSONParseException {
-        char c = this.nextToken();
-        switch (c) {
+        try {
+            char c = this.nextToken();
+            switch (c) {
 
-            case '{':
-                LinkedHashMap<String,Object> map = new LinkedHashMap<String, Object>();
-                while (true){
-                    switch (nextToken()) {
-                        case 0:
-                            throw new JSONParseException(this.string,this.position,"Text which start with '{' must end with '}'");
-                        case '}':
-                            return map;
-                    }
-                    --position;
-                    String key = nextValue().toString();
-                    char ch = nextToken();
-                    if (ch != ':') {
-                        throw new JSONParseException(this.string,this.position,"Expected a ':' after a key");
-                    }
-                    map.put(key, nextValue());
-
-                    switch (nextToken()) {
-                        case ';':
-                        case ',':
-                            if (nextToken() == '}') {
-                                return map;
+                case '{':
+                    try {
+                        LinkedHashMap<String, Object> map = new LinkedHashMap<String, Object>();
+                        while (true) {
+                            if (nextToken() == '}') return map;
+                            --position;
+                            String key = nextValue().toString();
+                            char ch = nextToken();
+                            if (ch != ':') {
+                                throw new JSONParseException(this.string, this.position, "Expected a ':' after a key");
                             }
-                            --position;
-                            break;
-                        case '}':
-                            return map;
-                        default:
-                            throw new JSONParseException(this.string,this.position,"Expected a ',' or '}'");
-                    }
-                }
+                            map.put(key, nextValue());
 
-
-            case '[':
-                ArrayList<Object> list = new ArrayList<Object>();
-                if (nextToken() != ']') {
-                    --position;
-                    while (true) {
-                        if (nextToken() == ',') {
-                            --position;
-                            list.add(null);
-                        } else {
-                            --position;
-                            list.add(nextValue());
-                        }
-                        switch (nextToken()) {
-                            case ',':
-                                if (nextToken() == ']') {
-                                    return list;
-                                }
-                                --position;
-                                break;
-                            case ']':
-                                return list;
-                            default:
-                                throw new JSONParseException(this.string,this.position,"Expected a ',' or ']'");
-                        }
-                    }
-                }
-                return list;
-
-            case '"':
-            case '\'':
-                StringBuilder sb = new StringBuilder();
-                while (true) {
-                    char ch = this.string.charAt(position++);
-                    switch (ch) {
-                        case 0:
-                        case '\n':
-                        case '\r':
-                            throw new JSONParseException(this.string,this.position,"Unterminated string");
-                        case '\\':
-                            ch = this.string.charAt(position++);
-                            switch (ch) {
-                                case 'b':
-                                    sb.append('\b');
+                            switch (nextToken()) {
+                                case ';':
+                                case ',':
+                                    if (nextToken() == '}') {
+                                        return map;
+                                    }
+                                    --position;
                                     break;
-                                case 't':
-                                    sb.append('\t');
-                                    break;
-                                case 'n':
-                                    sb.append('\n');
-                                    break;
-                                case 'f':
-                                    sb.append('\f');
-                                    break;
-                                case 'r':
-                                    sb.append('\r');
-                                    break;
-                                case 'u':
-                                    sb.append((char)Integer.parseInt(this.string.substring(position,position+=4), 16));
-                                    break;
-                                case '"':
-                                case '\'':
-                                case '\\':
-                                case '/':
-                                    sb.append(ch);
-                                    break;
+                                case '}':
+                                    return map;
                                 default:
-                                    throw new JSONParseException(this.string,this.position,"Illegal escape.");
+                                    throw new JSONParseException(this.string, this.position, "Expected a ',' or '}'");
                             }
-                            break;
-                        default:
-                            if (ch == c) {
-                                return sb.toString();
+                        }
+                    } catch (StringIndexOutOfBoundsException ignore) {
+                        throw new JSONParseException(this.string, this.position, "Expected a ',' or '}'");
+                    }
+
+
+                case '[':
+                    try {
+                        ArrayList<Object> list = new ArrayList<Object>();
+                        if (nextToken() != ']') {
+                            --position;
+                            while (true) {
+                                if (nextToken() == ',') {
+                                    --position;
+                                    list.add(null);
+                                } else {
+                                    --position;
+                                    list.add(nextValue());
+                                }
+                                switch (nextToken()) {
+                                    case ',':
+                                        if (nextToken() == ']') {
+                                            return list;
+                                        }
+                                        --position;
+                                        break;
+                                    case ']':
+                                        return list;
+                                    default:
+                                        throw new JSONParseException(this.string, this.position, "Expected a ',' or ']'");
+                                }
                             }
-                            sb.append(ch);
+                        }
+                        return list;
+                    } catch (StringIndexOutOfBoundsException ignore) {
+                        throw new JSONParseException(this.string, this.position, "Expected a ',' or ']'");
                     }
-                }
-        }
-
-        StringBuilder sb = new StringBuilder();
-        while (c >= ' ' && ",:]}/\\\"[{;=#".indexOf(c) < 0) {
-            sb.append(c);
-            c = this.string.charAt(position++);
-        }
-        --position;
-
-        String string = sb.toString().trim();
-        if ("".equals(string)) {
-            throw new JSONParseException(this.string,this.position,"Missing value");
-        }
-
-        if (string.equals("")) {
-            return string;
-        }
-        if (string.equalsIgnoreCase("true")) {
-            return Boolean.TRUE;
-        }
-        if (string.equalsIgnoreCase("false")) {
-            return Boolean.FALSE;
-        }
-        if (string.equalsIgnoreCase("null")) {
-            return null;
-        }
 
 
-        char b = string.charAt(0);
-        if ((b >= '0' && b <= '9') || b == '-') {
-            try {
-                if (string.indexOf('.') > -1 || string.indexOf('e') > -1
-                        || string.indexOf('E') > -1) {
-                    Double d = Double.valueOf(string);
-                    if (!d.isInfinite() && !d.isNaN()) {
-                        return d;
-                    }
-                } else {
-                    Long num = new Long(string);
-                    if (string.equals(num.toString())) {
-                        if (num == num.intValue()) {
-                            return num.intValue();
-                        } else {
-                            return num;
+                case '"':
+                case '\'':
+                    StringBuilder sb = new StringBuilder();
+                    while (true) {
+                        char ch = this.string.charAt(position++);
+                        switch (ch) {
+                            case 0:
+                            case '\n':
+                            case '\r':
+                                throw new JSONParseException(this.string, this.position, "Unterminated string");
+                            case '\\':
+                                ch = this.string.charAt(position++);
+                                switch (ch) {
+                                    case 'b':
+                                        sb.append('\b');
+                                        break;
+                                    case 't':
+                                        sb.append('\t');
+                                        break;
+                                    case 'n':
+                                        sb.append('\n');
+                                        break;
+                                    case 'f':
+                                        sb.append('\f');
+                                        break;
+                                    case 'r':
+                                        sb.append('\r');
+                                        break;
+                                    case 'u':
+                                        sb.append((char) Integer.parseInt(this.string.substring(position, position += 4), 16));
+                                        break;
+                                    case '"':
+                                    case '\'':
+                                    case '\\':
+                                    case '/':
+                                        sb.append(ch);
+                                        break;
+                                    default:
+                                        throw new JSONParseException(this.string, this.position, "Illegal escape.");
+                                }
+                                break;
+                            default:
+                                if (ch == c) {
+                                    return sb.toString();
+                                }
+                                sb.append(ch);
                         }
                     }
+            }
+
+            StringBuilder sb = new StringBuilder();
+            while (c >= ' ' && ",:]}/\\\"[{;=#".indexOf(c) < 0) {
+                sb.append(c);
+                c = this.string.charAt(position++);
+            }
+            --position;
+
+            String string = sb.toString().trim();
+            if (string.equalsIgnoreCase("true")) {
+                return Boolean.TRUE;
+            }
+            if (string.equalsIgnoreCase("false")) {
+                return Boolean.FALSE;
+            }
+            if (string.equalsIgnoreCase("null")) {
+                return null;
+            }
+
+            char b = "-+".indexOf(string.charAt(0))<0?string.charAt(0):string.charAt(1);
+            if (b >= '0' && b <= '9') {
+                try {
+                    return new Integer(string);
+                }catch (NumberFormatException exInt){
+                    try {
+                        return new Long(string);
+                    }catch (NumberFormatException exLong) {
+                        try {
+                            return new Double(string);
+                        } catch (NumberFormatException ignore) {}
+                    }
                 }
-            } catch (Exception ignore) {}
+            }
+            return string;
+        }catch (StringIndexOutOfBoundsException ignore){
+            throw new JSONParseException(this.string,this.position,"Unexpected end");
         }
-        return string;
     }
 
 
 
-    private char nextToken() throws JSONParseException {
-        try {
-            while (this.string.charAt(position++) <= ' ') ;
-            return this.string.charAt(position - 1);
-        }catch (StringIndexOutOfBoundsException ignore){
-            return 0;
-        }
+    private char nextToken() throws StringIndexOutOfBoundsException {
+        while (this.string.charAt(position++) <= ' ') ;
+        return this.string.charAt(position - 1);
     }
 }
