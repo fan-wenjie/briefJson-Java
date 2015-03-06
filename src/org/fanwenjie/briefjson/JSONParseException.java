@@ -27,12 +27,13 @@ public class JSONParseException extends RuntimeException {
     }
 
     @Override
-    public String getMessage(){
+    public String getMessage() {
         final int maxTipLength = 10;
-        int start = position + 1 - maxTipLength;
-        if(start<0) start=0;
-        return  json.substring(start,position+1)+"< '"+json.charAt(position)+"' "
-                +Integer.valueOf(position).toString()+":"+super.getMessage();
+        int end = position + 1;
+        int start = end - maxTipLength;
+        if (start < 0) start = 0;
+        if (end > json.length()) end = json.length();
+        return String.format("%s  (%d):%s",json.substring(start, end),position,super.getMessage());
     }
 
     public String getJson(){return this.json;}
