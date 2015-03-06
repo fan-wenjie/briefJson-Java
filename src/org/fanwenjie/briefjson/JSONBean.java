@@ -69,6 +69,100 @@ public class JSONBean {
         return map;
     }
 
+    public static<T> Collection deserialize(Collection template,Class<T> genericType,Collection collection) throws Exception{
+        return deserialize(template,genericType,collection.toArray());
+    }
+
+    public static<T,A> Collection deserialize(Collection template,Class<T> genericType,A[] array) throws Exception{
+        Collection collection = template.getClass().newInstance();
+        Object[] list = template.toArray();
+        for(int i=0;i<array.length;++i)
+            if(i<list.length)
+                collection.add(deserialize(list[i],array[i]));
+            else
+                collection.add(deserialize(genericType,array[i]));
+        return collection;
+    }
+
+    public static <T> T deserialize(T template,Object object) throws Exception {
+        if (object instanceof Number || object instanceof String || object instanceof Boolean)
+            return (T) object;
+        if (object instanceof Collection)
+            return deserialize(template, ((Collection) object).toArray());
+        if (template instanceof Collection) {
+            if (!object.getClass().isArray())
+                return null;
+            return (T) deserialize((Collection) template, Object.class, (Object[]) object);
+        }
+        if (template.getClass().isArray()) {
+            if (!object.getClass().isArray())
+                return null;
+            Class componentType = template.getClass().getComponentType();
+            int length = Array.getLength(object);
+            Object array = Array.newInstance(template.getClass(), length);
+            for (int i = 0; i < length; ++i)
+                if (i < Array.getLength(template))
+                    Array.set(array, i, deserialize(Array.get(template, i), Array.get(object, i)));
+                else
+                    Array.set(array,i,deserialize(componentType,Array.get(object,i)));
+            return (T)array;
+        }
+
+        if (object instanceof Map) {
+            Map map = (Map) object;
+            for (Field field : template.getClass().getDeclaredFields()) {
+                Object value = null;
+                boolean isRequired = false;
+                try {
+                    field.setAccessible(true);
+                    JSONSeriable seriable = field.getAnnotation(JSONSeriable.class);
+                    if (seriable != null) {
+                        String name = seriable.name();
+                        if (name.isEmpty())
+                            name = field.getName();
+                        isRequired = seriable.isRequired();
+                        value = map.get(name);
+                        Object tmp = field.get(template);
+                        Class clazz = field.getType();
+
+                        if(Collection.class.isAssignableFrom(clazz)){
+                            Class genericType = Object.class;
+                            try {
+                                genericType = (Class) ((ParameterizedType) field.getGenericType()).getActualTypeArguments()[0];
+                            } catch (Exception ignore) {
+                            }
+                            if(tmp==null||((Collection)tmp).size()==0) {
+                                if (value instanceof Collection)
+                                    value = deserialize(clazz, genericType, (Collection) value);
+                                else if (value.getClass().isArray())
+                                    value = deserialize(clazz, genericType, (Object[]) value);
+                                else return null;
+                            }else{
+                                if (value instanceof Collection)
+                                    value = deserialize((Collection)tmp, genericType, (Collection) value);
+                                else if (value.getClass().isArray())
+                                    value = deserialize((Collection)tmp, genericType, (Object[]) value);
+                                else return null;
+                            }
+                        }else{
+                            if(tmp==null||(tmp.getClass().isArray()&&Array.getLength(tmp)==0))
+                                value = deserialize(clazz,value);
+                            else
+                                value = deserialize(tmp, value);
+                        }
+                        field.set(template, value);
+                    }
+                } catch (Exception ignore) {
+                } finally {
+                    if (isRequired && value == null)
+                        throw new NullPointerException();
+                }
+            }
+            return template;
+        }
+        return null;
+    }
+
     public static <T> T deserialize(Class<T> klass,Map map) throws Exception {
         Object bean = klass.newInstance();
         for (Field field : klass.getDeclaredFields()) {
