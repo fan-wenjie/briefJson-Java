@@ -64,9 +64,9 @@ public class JSONSerializer {
      *
      * @param json the json string which will be deserialized
      * @return the data object made from json
-     * @throws JSONParseException th
+     * @throws ParseException th
      */
-    public static Object deserialize(String json) throws JSONParseException {
+    public static Object deserialize(String json) throws ParseException {
         return new JSONSerializer(json).nextValue();
     }
 
@@ -79,7 +79,7 @@ public class JSONSerializer {
         this.position = 0;
     }
 
-    private Object nextValue() throws JSONParseException {
+    private Object nextValue() throws ParseException {
         try {
             char c = this.nextToken();
             switch (c) {
@@ -92,7 +92,7 @@ public class JSONSerializer {
                             String key = nextValue().toString();
                             char ch = nextToken();
                             if (ch != ':') {
-                                throw new JSONParseException(this.string, this.position, "Expected a ':' after a key");
+                                throw new ParseException(this.string, this.position, "Expected a ':' after a key");
                             }
                             map.put(key, nextValue());
 
@@ -107,11 +107,11 @@ public class JSONSerializer {
                                 case '}':
                                     return map;
                                 default:
-                                    throw new JSONParseException(this.string, this.position, "Expected a ',' or '}'");
+                                    throw new ParseException(this.string, this.position, "Expected a ',' or '}'");
                             }
                         }
                     } catch (StringIndexOutOfBoundsException ignore) {
-                        throw new JSONParseException(this.string, this.position, "Expected a ',' or '}'");
+                        throw new ParseException(this.string, this.position, "Expected a ',' or '}'");
                     }
 
 
@@ -138,13 +138,13 @@ public class JSONSerializer {
                                     case ']':
                                         return list;
                                     default:
-                                        throw new JSONParseException(this.string, this.position, "Expected a ',' or ']'");
+                                        throw new ParseException(this.string, this.position, "Expected a ',' or ']'");
                                 }
                             }
                         }
                         return list;
                     } catch (StringIndexOutOfBoundsException ignore) {
-                        throw new JSONParseException(this.string, this.position, "Expected a ',' or ']'");
+                        throw new ParseException(this.string, this.position, "Expected a ',' or ']'");
                     }
 
 
@@ -157,7 +157,7 @@ public class JSONSerializer {
                             case 0:
                             case '\n':
                             case '\r':
-                                throw new JSONParseException(this.string, this.position, "Unterminated string");
+                                throw new ParseException(this.string, this.position, "Unterminated string");
                             case '\\':
                                 ch = this.string.charAt(position++);
                                 switch (ch) {
@@ -186,7 +186,7 @@ public class JSONSerializer {
                                         sb.append(ch);
                                         break;
                                     default:
-                                        throw new JSONParseException(this.string, this.position, "Illegal escape.");
+                                        throw new ParseException(this.string, this.position, "Illegal escape.");
                                 }
                                 break;
                             default:
@@ -229,7 +229,7 @@ public class JSONSerializer {
             }
             return substr;
         } catch (StringIndexOutOfBoundsException ignore) {
-            throw new JSONParseException(this.string, this.position, "Unexpected end");
+            throw new ParseException(this.string, this.position, "Unexpected end");
         }
     }
 
