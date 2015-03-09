@@ -1,6 +1,3 @@
-import org.fanwenjie.briefjson.JSONBean;
-import org.fanwenjie.briefjson.JSONSerializer;
-
 /**
  * The JSONException is thrown when deserialize a illegal json.
  *

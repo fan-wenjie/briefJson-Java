@@ -1,66 +1,80 @@
-package org.fanwenjie.briefjson;
+package org.fanwenjie.briefjson.json;
 
 
 import java.lang.reflect.Array;
 import java.util.*;
 
 /**
- *
  * @author Fan Wen Jie
  * @version 2015-03-05
  */
 public class JSONSerializer {
 
-    public static String serialize(Object object) throws IllegalArgumentException{
-        if(object==null)
+    /**
+     * Serializing a data object combined by values which types are Number Bollean Map Collection Array null to Json
+     *
+     * @param object object which will be serialized
+     * @return Json string made from object
+     * @throws IllegalArgumentException the node object of the data object whose type is not one of Number Bollean Map Collection Array null
+     */
+
+    public static String serialize(Object object) throws IllegalArgumentException {
+        if (object == null)
             return "null";
-        if(object instanceof String)
-            return '\"'+((String)object).replace("\b","\\b")
-                    .replace("\t","\\t").replace("\r","\\r")
-                    .replace("\f","\\f").replace("\n","\\n")+'\"';
-        if(object instanceof Number || object instanceof Boolean)
+        if (object instanceof String)
+            return '\"' + ((String) object).replace("\b", "\\b")
+                    .replace("\t", "\\t").replace("\r", "\\r")
+                    .replace("\f", "\\f").replace("\n", "\\n") + '\"';
+        if (object instanceof Number || object instanceof Boolean)
             return object.toString();
-        if(object instanceof Map){
+        if (object instanceof Map) {
             StringBuilder sb = new StringBuilder();
             sb.append('{');
-            Map map = (Map)object;
-            for(Object key : map.keySet()){
+            Map map = (Map) object;
+            for (Object key : map.keySet()) {
                 Object value = map.get(key);
                 sb.append(serialize(key)).append(':').append(serialize(value)).append(',');
             }
-            int last = sb.length()-1;
-            if(sb.charAt(last)==',') sb.deleteCharAt(last);
+            int last = sb.length() - 1;
+            if (sb.charAt(last) == ',') sb.deleteCharAt(last);
             sb.append('}');
             return sb.toString();
         }
-        if(object instanceof Collection){
-            return serialize(((Collection)object).toArray());
+        if (object instanceof Collection) {
+            return serialize(((Collection) object).toArray());
         }
-        if(object.getClass().isArray()){
+        if (object.getClass().isArray()) {
             StringBuilder sb = new StringBuilder();
             sb.append('[');
-            int last = Array.getLength(object)-1;
-            for(int i=0;i<=last;++i){
-                Object value = Array.get(object,i);
+            int last = Array.getLength(object) - 1;
+            for (int i = 0; i <= last; ++i) {
+                Object value = Array.get(object, i);
                 sb.append(serialize(value)).append(',');
             }
-            last = sb.length()-1;
-            if(sb.charAt(last)==',')    sb.deleteCharAt(last);
+            last = sb.length() - 1;
+            if (sb.charAt(last) == ',') sb.deleteCharAt(last);
             sb.append(']');
             return sb.toString();
         }
         throw new IllegalArgumentException(object.toString());
     }
 
+    /**
+     * Deserializing a json string to data object
+     *
+     * @param json the json string which will be deserialized
+     * @return the data object made from json
+     * @throws JSONParseException th
+     */
     public static Object deserialize(String json) throws JSONParseException {
         return new JSONSerializer(json).nextValue();
     }
 
 
-    private int     position;
-    private String  string;
+    private int position;
+    private String string;
 
-    private JSONSerializer(String string){
+    private JSONSerializer(String string) {
         this.string = string;
         this.position = 0;
     }
@@ -203,26 +217,25 @@ public class JSONSerializer {
                 return null;
             }
 
-            char b = "-+".indexOf(string.charAt(0))<0?string.charAt(0):string.charAt(1);
+            char b = "-+".indexOf(string.charAt(0)) < 0 ? string.charAt(0) : string.charAt(1);
             if (b >= '0' && b <= '9') {
                 try {
-                    return new Integer(string);
-                }catch (NumberFormatException exInt){
+                    Long l = new Long(string);
+                    if (l.intValue() == l)
+                        return l.intValue();
+                    return l;
+                } catch (NumberFormatException exInt) {
                     try {
-                        return new Long(string);
-                    }catch (NumberFormatException exLong) {
-                        try {
-                            return new Double(string);
-                        } catch (NumberFormatException ignore) {}
+                        return new Double(string);
+                    } catch (NumberFormatException ignore) {
                     }
                 }
             }
             return string;
-        }catch (StringIndexOutOfBoundsException ignore){
-            throw new JSONParseException(this.string,this.position,"Unexpected end");
+        } catch (StringIndexOutOfBoundsException ignore) {
+            throw new JSONParseException(this.string, this.position, "Unexpected end");
         }
     }
-
 
 
     private char nextToken() throws StringIndexOutOfBoundsException {
