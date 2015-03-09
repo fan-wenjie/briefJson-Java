@@ -6,7 +6,7 @@ package org.fanwenjie.briefjson.json;
  * @author Fan Wen Jie
  * @version 2015-03-05
  */
-public class JSONParseException extends RuntimeException {
+public class ParseException extends RuntimeException {
     private static final long serialVersionUID = 3674125742687171239L;
     private int position = 0;
     private String json = "";
@@ -21,7 +21,7 @@ public class JSONParseException extends RuntimeException {
      * @param message  the detail message. The detail message is saved for
      *                 later retrieval by the {@link #getMessage()} method.
      */
-    public JSONParseException(String json, int position, String message) {
+    public ParseException(String json, int position, String message) {
         super(message);
         this.json = json;
         this.position = position;
