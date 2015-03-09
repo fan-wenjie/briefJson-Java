@@ -12,6 +12,7 @@ import java.util.*;
  */
 public class JSONBean {
     
+
     public static Object serialize(Object bean) throws NullPointerException {
         if (bean == null)
             return null;
