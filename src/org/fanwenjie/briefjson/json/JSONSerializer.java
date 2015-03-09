@@ -83,7 +83,6 @@ public class JSONSerializer {
         try {
             char c = this.nextToken();
             switch (c) {
-
                 case '{':
                     try {
                         LinkedHashMap<String, Object> map = new LinkedHashMap<String, Object>();
@@ -199,39 +198,36 @@ public class JSONSerializer {
                     }
             }
 
-            StringBuilder sb = new StringBuilder();
-            while (c >= ' ' && ",:]}/\\\"[{;=#".indexOf(c) < 0) {
-                sb.append(c);
+            int startPosition = this.position;
+            while (c >= ' ' && ",:]}/\\\"[{;=#".indexOf(c) < 0)
                 c = this.string.charAt(position++);
-            }
+            String substr = this.string.substring(startPosition,position);
             --position;
-
-            String string = sb.toString().trim();
-            if (string.equalsIgnoreCase("true")) {
+            if (substr.equalsIgnoreCase("true")) {
                 return Boolean.TRUE;
             }
-            if (string.equalsIgnoreCase("false")) {
+            if (substr.equalsIgnoreCase("false")) {
                 return Boolean.FALSE;
             }
-            if (string.equalsIgnoreCase("null")) {
+            if (substr.equalsIgnoreCase("null")) {
                 return null;
             }
 
-            char b = "-+".indexOf(string.charAt(0)) < 0 ? string.charAt(0) : string.charAt(1);
+            char b = "-+".indexOf(substr.charAt(0)) < 0 ? substr.charAt(0) : substr.charAt(1);
             if (b >= '0' && b <= '9') {
                 try {
-                    Long l = new Long(string);
+                    Long l = new Long(substr);
                     if (l.intValue() == l)
                         return l.intValue();
                     return l;
                 } catch (NumberFormatException exInt) {
                     try {
-                        return new Double(string);
+                        return new Double(substr);
                     } catch (NumberFormatException ignore) {
                     }
                 }
             }
-            return string;
+            return substr;
         } catch (StringIndexOutOfBoundsException ignore) {
             throw new JSONParseException(this.string, this.position, "Unexpected end");
         }
