@@ -7,7 +7,7 @@
 
 public class Main {
     public static void main(String[] args){
-        Role.Test1();
-        //Role.Test2();
+        //Role.Test1();
+        Role.Test2();
     }
 }

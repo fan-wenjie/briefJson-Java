@@ -89,30 +89,30 @@ public class JSONSerializer {
                 case '{':
                     try {
                         LinkedHashMap<String, Object> map = new LinkedHashMap<String, Object>();
-                        while (true) {
-                            if (nextToken() == '}') return map;
+                        if (nextToken() != '}') {
                             --position;
-                            String key = nextValue().toString();
-                            char ch = nextToken();
-                            if (ch != ':') {
-                                throw new ParseException(this.string, this.position, "Expected a ':' after a key");
-                            }
-                            map.put(key, nextValue());
+                            while (true) {
+                                String key = nextValue().toString();
+                                if (nextToken() != ':') {
+                                    throw new ParseException(this.string, this.position, "Expected a ':' after a key");
+                                }
+                                map.put(key, nextValue());
 
-                            switch (nextToken()) {
-                                case ';':
-                                case ',':
-                                    if (nextToken() == '}') {
+                                switch (nextToken()) {
+                                    case ';':
+                                    case ',':
+                                        if (nextToken() == '}') {
+                                            return map;
+                                        }
+                                        --position;
+                                        break;
+                                    case '}':
                                         return map;
-                                    }
-                                    --position;
-                                    break;
-                                case '}':
-                                    return map;
-                                default:
-                                    throw new ParseException(this.string, this.position, "Expected a ',' or '}'");
+                                    default:
+                                        throw new ParseException(this.string, this.position, "Expected a ',' or '}'");
+                                }
                             }
-                        }
+                        } else return map;
                     } catch (StringIndexOutOfBoundsException ignore) {
                         throw new ParseException(this.string, this.position, "Expected a ',' or '}'");
                     }
@@ -144,8 +144,7 @@ public class JSONSerializer {
                                         throw new ParseException(this.string, this.position, "Expected a ',' or ']'");
                                 }
                             }
-                        }
-                        return list;
+                        } else return list;
                     } catch (StringIndexOutOfBoundsException ignore) {
                         throw new ParseException(this.string, this.position, "Expected a ',' or ']'");
                     }
@@ -201,11 +200,10 @@ public class JSONSerializer {
                     }
             }
 
-            int startPosition = this.position;
+            int startPosition = this.position - 1;
             while (c >= ' ' && ",:]}/\\\"[{;=#".indexOf(c) < 0)
                 c = this.string.charAt(position++);
-            String substr = this.string.substring(startPosition,position);
-            --position;
+            String substr = this.string.substring(startPosition, --position);
             if (substr.equalsIgnoreCase("true")) {
                 return Boolean.TRUE;
             }
