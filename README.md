@@ -15,4 +15,4 @@ Class:
 
 Seriable :Mark Field which will be Serialized in Java Bean;
 
-ParseException :Exception include json and position where error occured thrown when parsing a illegal json
+ParseException :Exception include json and position where error occured thrown when parsing an illegal json
