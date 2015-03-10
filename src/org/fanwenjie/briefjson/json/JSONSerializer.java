@@ -67,7 +67,7 @@ public class JSONSerializer {
      *
      * @param json the json string which will be deserialized
      * @return the data object made from json
-     * @throws ParseException th
+     * @throws ParseException thrown when parsing a illegal json text
      */
     public static Object deserialize(String json) throws ParseException {
         return new JSONSerializer(json).nextValue();
@@ -75,7 +75,7 @@ public class JSONSerializer {
 
 
     private int position;
-    private String string;
+    private final String string;
 
     private JSONSerializer(String string) {
         this.string = string;
