@@ -75,10 +75,10 @@ public class JSONSerializer {
 
 
     private int position;
-    private final String string;
+    private final char[] buffer;
 
     private JSONSerializer(String string) {
-        this.string = string;
+        this.buffer = string.toCharArray();
         this.position = 0;
     }
 
@@ -94,7 +94,7 @@ public class JSONSerializer {
                             while (true) {
                                 String key = nextValue().toString();
                                 if (nextToken() != ':') {
-                                    throw new ParseException(this.string, this.position, "Expected a ':' after a key");
+                                    throw new ParseException(new String(this.buffer), this.position, "Expected a ':' after a key");
                                 }
                                 map.put(key, nextValue());
 
@@ -109,12 +109,12 @@ public class JSONSerializer {
                                     case '}':
                                         return map;
                                     default:
-                                        throw new ParseException(this.string, this.position, "Expected a ',' or '}'");
+                                        throw new ParseException(new String(this.buffer), this.position, "Expected a ',' or '}'");
                                 }
                             }
                         } else return map;
-                    } catch (StringIndexOutOfBoundsException ignore) {
-                        throw new ParseException(this.string, this.position, "Expected a ',' or '}'");
+                    } catch (ArrayIndexOutOfBoundsException ignore) {
+                        throw new ParseException(new String(this.buffer), this.position, "Expected a ',' or '}'");
                     }
 
 
@@ -141,12 +141,12 @@ public class JSONSerializer {
                                     case ']':
                                         return list;
                                     default:
-                                        throw new ParseException(this.string, this.position, "Expected a ',' or ']'");
+                                        throw new ParseException(new String(this.buffer), this.position, "Expected a ',' or ']'");
                                 }
                             }
                         } else return list;
-                    } catch (StringIndexOutOfBoundsException ignore) {
-                        throw new ParseException(this.string, this.position, "Expected a ',' or ']'");
+                    } catch (ArrayIndexOutOfBoundsException ignore) {
+                        throw new ParseException(new String(this.buffer), this.position, "Expected a ',' or ']'");
                     }
 
 
@@ -154,14 +154,14 @@ public class JSONSerializer {
                 case '\'':
                     StringBuilder sb = new StringBuilder();
                     while (true) {
-                        char ch = this.string.charAt(position++);
+                        char ch = this.buffer[position++];
                         switch (ch) {
                             case 0:
                             case '\n':
                             case '\r':
-                                throw new ParseException(this.string, this.position, "Unterminated string");
+                                throw new ParseException(new String(this.buffer), this.position, "Unterminated string");
                             case '\\':
-                                ch = this.string.charAt(position++);
+                                ch = this.buffer[position++];
                                 switch (ch) {
                                     case 'b':
                                         sb.append('\b');
@@ -179,7 +179,20 @@ public class JSONSerializer {
                                         sb.append('\r');
                                         break;
                                     case 'u':
-                                        sb.append((char) Integer.parseInt(this.string.substring(position, position += 4), 16));
+                                        int num = 0;
+                                        for (int i = 3; i >= 0; --i) {
+                                            int tmp = buffer[position++];
+                                            if (tmp >= '0' && tmp <= '9')
+                                                tmp = tmp - '0';
+                                            else if (tmp >= 'A' && tmp <= 'F')
+                                                tmp = tmp - ('A' - 10);
+                                            else if (tmp >= 'a' && tmp <= 'f')
+                                                tmp = tmp - ('a' - 10);
+                                            else
+                                                throw new ParseException(new String(this.buffer), this.position, "Illegal hex code");
+                                            num += tmp << (i * 4);
+                                        }
+                                        sb.append((char) num);
                                         break;
                                     case '"':
                                     case '\'':
@@ -188,7 +201,7 @@ public class JSONSerializer {
                                         sb.append(ch);
                                         break;
                                     default:
-                                        throw new ParseException(this.string, this.position, "Illegal escape.");
+                                        throw new ParseException(new String(this.buffer), this.position, "Illegal escape.");
                                 }
                                 break;
                             default:
@@ -202,8 +215,8 @@ public class JSONSerializer {
 
             int startPosition = this.position - 1;
             while (c >= ' ' && ",:]}/\\\"[{;=#".indexOf(c) < 0)
-                c = this.string.charAt(position++);
-            String substr = this.string.substring(startPosition, --position);
+                c = this.buffer[position++];
+            String substr = new String(buffer, startPosition, --position - startPosition);
             if (substr.equalsIgnoreCase("true")) {
                 return Boolean.TRUE;
             }
@@ -229,14 +242,14 @@ public class JSONSerializer {
                 }
             }
             return substr;
-        } catch (StringIndexOutOfBoundsException ignore) {
-            throw new ParseException(this.string, this.position, "Unexpected end");
+        } catch (ArrayIndexOutOfBoundsException ignore) {
+            throw new ParseException(new String(this.buffer), this.position, "Unexpected end");
         }
     }
 
 
-    private char nextToken() throws StringIndexOutOfBoundsException {
-        while (this.string.charAt(position++) <= ' ') ;
-        return this.string.charAt(position - 1);
+    private char nextToken() throws ArrayIndexOutOfBoundsException {
+        while (this.buffer[position++] <= ' ') ;
+        return this.buffer[position - 1];
     }
 }
