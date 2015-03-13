@@ -37,7 +37,6 @@ JSONSerializer.deserializer :将JSON文本解析为List和Map
 
 BeanSerializer.serializer :把Java Bean序列化为List和Map
 
-
 Seriable :把Java Bean中要序列化的字段用此注解。无此注解的字段将不序列化;
 
 ParseException :解析JSON时报错抛出的异常。
