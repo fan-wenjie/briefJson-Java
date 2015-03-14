@@ -182,11 +182,11 @@ public class JSONSerializer {
                                         int num = 0;
                                         for (int i = 3; i >= 0; --i) {
                                             int tmp = buffer[position++];
-                                            if (tmp >= '0' && tmp <= '9')
+                                            if (tmp <= '9' && tmp >= '0')
                                                 tmp = tmp - '0';
-                                            else if (tmp >= 'A' && tmp <= 'F')
+                                            else if (tmp <= 'F' && tmp >= 'A')
                                                 tmp = tmp - ('A' - 10);
-                                            else if (tmp >= 'a' && tmp <= 'f')
+                                            else if (tmp <= 'f' && tmp >= 'a')
                                                 tmp = tmp - ('a' - 10);
                                             else
                                                 throw new ParseException(new String(this.buffer), this.position, "Illegal hex code");
