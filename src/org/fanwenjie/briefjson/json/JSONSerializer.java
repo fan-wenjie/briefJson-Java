@@ -79,7 +79,7 @@ public class JSONSerializer {
 
     private JSONSerializer(String string) {
         this.buffer = string.toCharArray();
-        this.position = 0;
+        this.position = -1;
     }
 
     private Object nextValue() throws ParseException {
@@ -97,7 +97,6 @@ public class JSONSerializer {
                                     throw new ParseException(new String(this.buffer), this.position, "Expected a ':' after a key");
                                 }
                                 map.put(key, nextValue());
-
                                 switch (nextToken()) {
                                     case ';':
                                     case ',':
@@ -154,14 +153,14 @@ public class JSONSerializer {
                 case '\'':
                     StringBuilder sb = new StringBuilder();
                     while (true) {
-                        char ch = this.buffer[position++];
+                        char ch = this.buffer[++position];
                         switch (ch) {
                             case 0:
                             case '\n':
                             case '\r':
                                 throw new ParseException(new String(this.buffer), this.position, "Unterminated string");
                             case '\\':
-                                ch = this.buffer[position++];
+                                ch = this.buffer[++position];
                                 switch (ch) {
                                     case 'b':
                                         sb.append('\b');
@@ -181,7 +180,7 @@ public class JSONSerializer {
                                     case 'u':
                                         int num = 0;
                                         for (int i = 3; i >= 0; --i) {
-                                            int tmp = buffer[position++];
+                                            int tmp = buffer[++position];
                                             if (tmp <= '9' && tmp >= '0')
                                                 tmp = tmp - '0';
                                             else if (tmp <= 'F' && tmp >= 'A')
@@ -213,10 +212,10 @@ public class JSONSerializer {
                     }
             }
 
-            int startPosition = this.position - 1;
+            int startPosition = this.position;
             while (c >= ' ' && ",:]}/\\\"[{;=#".indexOf(c) < 0)
-                c = this.buffer[position++];
-            String substr = new String(buffer, startPosition, --position - startPosition);
+                c = this.buffer[++position];
+            String substr = new String(buffer, startPosition, position-- - startPosition);
             if (substr.equalsIgnoreCase("true")) {
                 return Boolean.TRUE;
             }
@@ -249,7 +248,7 @@ public class JSONSerializer {
 
 
     private char nextToken() throws ArrayIndexOutOfBoundsException {
-        while (this.buffer[position++] <= ' ') ;
-        return this.buffer[position - 1];
+        while (this.buffer[++position] <= ' ') ;
+        return this.buffer[position];
     }
 }
