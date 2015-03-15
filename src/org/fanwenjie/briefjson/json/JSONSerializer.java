@@ -155,7 +155,6 @@ public class JSONSerializer {
                     while (true) {
                         char ch = this.buffer[++position];
                         switch (ch) {
-                            case 0:
                             case '\n':
                             case '\r':
                                 throw new ParseException(new String(this.buffer), this.position, "Unterminated string");
