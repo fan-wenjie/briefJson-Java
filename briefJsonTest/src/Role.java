@@ -7,7 +7,7 @@ import java.util.ArrayList;
 /**
  * The JSONException is thrown when deserialize a illegal json.
  *
- * @author  Fan Wen Jie
+ * @author Fan Wen Jie
  * @version 2015-03-05
  */
 
@@ -16,8 +16,8 @@ public class Role {
     /**
      * Bean Deserialized by Class
      */
-    public static void Test1(){
-        try{
+    public static void Test1() {
+        try {
             String json = "{\"Name\":\"\\u0053\\u0070\\u0069\\u006b\\u0065\",\"Sex\":true,\"Age\":75,\"Friend\":[{\"Name\":\"Tom\",\"Sex\":true,\"Age\":75,\"Friend\":[]},{\"Name\":\"Jerry\",\"Sex\":true,\"Age\":75,\"Friend\":[{\"Name\":\"Tom\",\"Sex\":true,\"Age\":75,\"Friend\":[]}]}]}";
             System.out.println(json);
             Object obj1 = JSONSerializer.deserialize(json);
@@ -26,7 +26,7 @@ public class Role {
             Object obj2 = BeanSerializer.serialize(spike);
             String text = JSONSerializer.serialize(obj2);
             System.out.println(text);
-        }catch (Exception ex){
+        } catch (Exception ex) {
             ex.printStackTrace();
         }
     }
@@ -35,23 +35,18 @@ public class Role {
     /**
      * Bean Deserialized by Object Template
      */
-    public static void Test2(){
-        try{
+    public static void Test2() {
+        try {
             Role template = new Role();
-            Role tmp1 = new Role();
-            double tmp2 = 2.0;
-            boolean tmp3 = true;
-            String tmp4 = "TEMP";
-            template.getOtherList().add(tmp1);
-            template.getOtherList().add(tmp2);
-            template.getOtherList().add(tmp3);
-            template.getOtherList().add(tmp4);
+            template.setOtherList(new Object[]{new Role(), 2.0, true, "TEMP"});
             String json = "{\"Name\":\"Tom\",\"Sex\":true,\"Age\":75,\"Friend\":[],\"Others\":[{\"Name\":\"Jerry\",\"Sex\":true,\"Age\":75,\"Friend\":[],\"Others\":[]},false,\"TEST\",3.14159]}";
             Object obj1 = JSONSerializer.deserialize(json);
             Role tom = BeanSerializer.deserialize(template, obj1);
-            for(Object obj : tom.getOtherList())
+            for (Object obj : tom.getOtherList())
                 System.out.println(obj.toString());
-        }catch (Exception ex){
+            for (Object obj : template.getOtherList())
+                System.out.println(obj.toString());
+        } catch (Exception ex) {
             ex.printStackTrace();
         }
     }
@@ -72,7 +67,7 @@ public class Role {
         return friend;
     }
 
-    public ArrayList getOtherList() {
+    public Object[] getOtherList() {
         return otherList;
     }
 
@@ -88,14 +83,19 @@ public class Role {
         this.age = age;
     }
 
-    @Seriable(name = "Name",order = 0)
+    public void setOtherList(Object[] otherList){
+        this.otherList = otherList;
+    }
+
+
+    @Seriable(name = "Name", order = 0)
     private String name;
-    @Seriable(name = "Sex",order = 1)
+    @Seriable(name = "Sex", order = 1)
     private boolean sex;
-    @Seriable(name = "Age",order = 2)
+    @Seriable(name = "Age", order = 2)
     private int age;
-    @Seriable(name = "Friend",order = 3)
+    @Seriable(name = "Friend", order = 3)
     private ArrayList<Role> friend = new ArrayList<Role>();
-    @Seriable(name = "Others",order = 4)
-    private ArrayList otherList = new ArrayList();
+    @Seriable(name = "Others", order = 4)
+    private Object[] otherList;
 }

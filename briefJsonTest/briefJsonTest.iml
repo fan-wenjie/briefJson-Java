@@ -8,5 +8,6 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="brief-json" />
+    <orderEntry type="module" module-name="Brief-JSON" />
   </component>
 </module>

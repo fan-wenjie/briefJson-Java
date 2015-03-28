@@ -76,19 +76,30 @@ public class BeanSerializer {
         return map;
     }
 
+    /**
+     * Deserialize a collection of data object to a collection template bean
+     * @param template  template bean which will be deserialized
+     * @param genericType generic type of collection template bean
+     * @param collection collecttion of data object
+     * @param <T> generic type
+     * @return equal to template bean
+     * @throws Exception
+     */
     public static <T> Collection deserialize(Collection template, Class<T> genericType, Collection collection) throws Exception {
         return deserialize(template, genericType, collection.toArray());
     }
 
     public static <T, A> Collection deserialize(Collection template, Class<T> genericType, A[] array) throws Exception {
-        Collection collection = template.getClass().newInstance();
         Object[] list = template.toArray();
+        template.clear();
         for (int i = 0; i < array.length; ++i)
-            if (i < list.length)
-                collection.add(deserialize(list[i], array[i]));
-            else
-                collection.add(deserialize(genericType, array[i]));
-        return collection;
+            if (i < list.length) {
+                template.add(deserialize(list[i], array[i]));
+            }
+            else {
+                template.add(deserialize(genericType, array[i]));
+            }
+        return template;
     }
 
     public static <T> T deserialize(T template, Object object) throws Exception {
@@ -106,7 +117,7 @@ public class BeanSerializer {
                 return null;
             Class componentType = template.getClass().getComponentType();
             int length = Array.getLength(object);
-            Object array = Array.newInstance(template.getClass(), length);
+            Object array = Array.newInstance(componentType, length);
             for (int i = 0; i < length; ++i)
                 if (i < Array.getLength(template))
                     Array.set(array, i, deserialize(Array.get(template, i), Array.get(object, i)));
