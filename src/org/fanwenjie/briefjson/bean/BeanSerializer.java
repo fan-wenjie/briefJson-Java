@@ -5,7 +5,9 @@ import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.util.*;
 
-/**Serializer bean to data object
+/**
+ * Serializer bean to data object
+ *
  * @author Fan Wen Jie
  * @version 2015-03-05
  */
@@ -14,8 +16,9 @@ public class BeanSerializer {
 
     /**
      * Serializer bean to data object combined by values whose type are null String Number Boolean Map Collection Array Map
-     * @param bean  the bean which will be serializer
-     * @return  the data object made from bean
+     *
+     * @param bean the bean which will be serializer
+     * @return the data object made from bean
      * @throws NullPointerException thrown when value of the necessary field of bean is null
      */
     public static Object serialize(Object bean) throws NullPointerException {
@@ -77,11 +80,12 @@ public class BeanSerializer {
     }
 
     /**
-     * Deserialize a collection of data object to a collection template bean
-     * @param template  template bean which will be deserialized
+     * Deserialize Collection object to Collection template bean
+     *
+     * @param template    template bean which will be deserialized
      * @param genericType generic type of collection template bean
-     * @param collection collecttion of data object
-     * @param <T> generic type
+     * @param collection  desource Collecttion object
+     * @param <T>         generic type
      * @return equal to template bean
      * @throws Exception
      */
@@ -89,18 +93,80 @@ public class BeanSerializer {
         return deserialize(template, genericType, collection.toArray());
     }
 
+    /**
+     * Deserialize Array object to Collection template bean
+     * @param template      template bean which will be deserialized
+     * @param genericType   generic type of collection template bean
+     * @param array         desource Array object
+     * @param <T>           generic type
+     * @param <A>           component type of array
+     * @return equal to template bean
+     * @throws Exception
+     */
     public static <T, A> Collection deserialize(Collection template, Class<T> genericType, A[] array) throws Exception {
         Object[] list = template.toArray();
         template.clear();
         for (int i = 0; i < array.length; ++i)
             if (i < list.length) {
                 template.add(deserialize(list[i], array[i]));
-            }
-            else {
+            } else {
                 template.add(deserialize(genericType, array[i]));
             }
         return template;
     }
+
+    public static <T> T deserialize(T template,Map map){
+        for (Field field : template.getClass().getDeclaredFields()) {
+            Object value = null;
+            boolean isRequired = false;
+            try {
+                field.setAccessible(true);
+                Seriable seriable = field.getAnnotation(Seriable.class);
+                if (seriable != null) {
+                    String name = seriable.name();
+                    if (name.isEmpty())
+                        name = field.getName();
+                    isRequired = seriable.isRequired();
+                    value = map.get(name);
+                    Object tmp = field.get(template);
+                    Class clazz = field.getType();
+
+                    if (Collection.class.isAssignableFrom(clazz)) {
+                        Class genericType = Object.class;
+                        try {
+                            genericType = (Class) ((ParameterizedType) field.getGenericType()).getActualTypeArguments()[0];
+                        } catch (Exception ignore) {
+                        }
+                        if (tmp == null || ((Collection) tmp).size() == 0) {
+                            if (value instanceof Collection)
+                                value = deserialize(clazz, genericType, (Collection) value);
+                            else if (value.getClass().isArray())
+                                value = deserialize(clazz, genericType, (Object[]) value);
+                            else return null;
+                        } else {
+                            if (value instanceof Collection)
+                                value = deserialize((Collection) tmp, genericType, (Collection) value);
+                            else if (value.getClass().isArray())
+                                value = deserialize((Collection) tmp, genericType, (Object[]) value);
+                            else return null;
+                        }
+                    } else {
+                        if (tmp == null || (tmp.getClass().isArray() && Array.getLength(tmp) == 0))
+                            value = deserialize(clazz, value);
+                        else
+                            value = deserialize(tmp, value);
+                    }
+                    field.set(template, value);
+                }
+            } catch (Exception ignore) {
+            } finally {
+                if (isRequired && value == null)
+                    throw new NullPointerException();
+            }
+        }
+        return template;
+    }
+
 
     public static <T> T deserialize(T template, Object object) throws Exception {
         if (object instanceof Number || object instanceof String || object instanceof Boolean)
@@ -115,71 +181,39 @@ public class BeanSerializer {
         if (template.getClass().isArray()) {
             if (!object.getClass().isArray())
                 return null;
+            int desLength = Array.getLength(template);
+            int srcLength = Array.getLength(object);
+            boolean isAppend = desLength == 0;
             Class componentType = template.getClass().getComponentType();
-            int length = Array.getLength(object);
+            int length = desLength>srcLength?srcLength:desLength;
             Object array = Array.newInstance(componentType, length);
-            for (int i = 0; i < length; ++i)
-                if (i < Array.getLength(template))
-                    Array.set(array, i, deserialize(Array.get(template, i), Array.get(object, i)));
-                else
+            for (int i = 0; i <length; ++i)
+                if (isAppend)
                     Array.set(array, i, deserialize(componentType, Array.get(object, i)));
+                else if (i < Array.getLength(template))
+                    Array.set(array, i, deserialize(Array.get(template, i), Array.get(object, i)));
             return (T) array;
         }
 
         if (object instanceof Map) {
-            Map map = (Map) object;
-            for (Field field : template.getClass().getDeclaredFields()) {
-                Object value = null;
-                boolean isRequired = false;
-                try {
-                    field.setAccessible(true);
-                    Seriable seriable = field.getAnnotation(Seriable.class);
-                    if (seriable != null) {
-                        String name = seriable.name();
-                        if (name.isEmpty())
-                            name = field.getName();
-                        isRequired = seriable.isRequired();
-                        value = map.get(name);
-                        Object tmp = field.get(template);
-                        Class clazz = field.getType();
-
-                        if (Collection.class.isAssignableFrom(clazz)) {
-                            Class genericType = Object.class;
-                            try {
-                                genericType = (Class) ((ParameterizedType) field.getGenericType()).getActualTypeArguments()[0];
-                            } catch (Exception ignore) {
-                            }
-                            if (tmp == null || ((Collection) tmp).size() == 0) {
-                                if (value instanceof Collection)
-                                    value = deserialize(clazz, genericType, (Collection) value);
-                                else if (value.getClass().isArray())
-                                    value = deserialize(clazz, genericType, (Object[]) value);
-                                else return null;
-                            } else {
-                                if (value instanceof Collection)
-                                    value = deserialize((Collection) tmp, genericType, (Collection) value);
-                                else if (value.getClass().isArray())
-                                    value = deserialize((Collection) tmp, genericType, (Object[]) value);
-                                else return null;
-                            }
-                        } else {
-                            if (tmp == null || (tmp.getClass().isArray() && Array.getLength(tmp) == 0))
-                                value = deserialize(clazz, value);
-                            else
-                                value = deserialize(tmp, value);
-                        }
-                        field.set(template, value);
-                    }
-                } catch (Exception ignore) {
-                } finally {
-                    if (isRequired && value == null)
-                        throw new NullPointerException();
+            if(template instanceof Map){
+                Map des = (Map)template;
+                Map src = (Map)object;
+                boolean isAppend = des.isEmpty();
+                for(Object key : src.keySet()) {
+                    if (isAppend)
+                        des.put(key, src.get(key));
+                    else if (des.containsKey(key))
+                        des.replace(key, deserialize(des.get(key), src.get(key)));
                 }
+            }else {
+                return deserialize(template, (Map) object);
             }
-            return template;
         }
         return null;
     }
+
+
 
     public static <T> T deserialize(Class<T> klass, Map map) throws Exception {
         Object bean = klass.newInstance();
@@ -243,11 +277,16 @@ public class BeanSerializer {
         return collection;
     }
 
+
     public static <T> T deserialize(Class<T> klass, Object object) throws Exception {
         if (object instanceof Number || object instanceof String || object instanceof Boolean)
             return (T) object;
-        else if (object instanceof Map)
-            return (T) deserialize(klass, (Map) object);
+        else if (object instanceof Map) {
+            if (Map.class.isAssignableFrom(klass))
+                return klass.cast(object);
+            else
+                return (T) deserialize(klass, (Map) object);
+        }
         else if (Collection.class.isAssignableFrom(klass)) {
             if (object instanceof Collection)
                 return (T) deserialize((Class<? extends Collection>) klass, Object.class, (Collection) object);
