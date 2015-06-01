@@ -13,8 +13,6 @@ public class ParseException extends RuntimeException {
 
     /**
      * Constructs a new json exception with the specified detail message.
-     * The cause is not initialized, and may subsequently be initialized by a
-     * call to {@link #initCause}.
      *
      * @param json     the json text which cause JSONParseException
      * @param position the position of illegal escape char at json text;
